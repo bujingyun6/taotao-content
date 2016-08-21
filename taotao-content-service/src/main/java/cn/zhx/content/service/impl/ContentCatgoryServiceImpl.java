@@ -1,6 +1,7 @@
 package cn.zhx.content.service.impl;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import cn.zhx.mapper.TbContentCategoryMapper;
 import cn.zhx.pojo.EasyUITreeNode;
+import cn.zhx.pojo.TaotaoResult;
 import cn.zhx.pojo.TbContentCategory;
 import cn.zhx.pojo.TbContentCategoryExample;
 import cn.zhx.pojo.TbContentCategoryExample.Criteria;
@@ -36,6 +38,33 @@ public class ContentCatgoryServiceImpl implements ContentCatgoryService{
 			result.add(easyUITreeNode);
 		}
 		return result;
+	}
+
+	
+
+	
+
+	@Override
+	public TaotaoResult createTreeNode(long parentId, String name) {
+		TbContentCategory contentCategory = new TbContentCategory();
+		contentCategory.setParentId(parentId);
+		contentCategory.setName(name);
+		contentCategory.setCreated(new Date());
+		//新建的节点都是叶子节点，所以是false
+		contentCategory.setIsParent(false);
+		 //默认的排序是1
+		contentCategory.setSortOrder(1);
+		//可选值:1(正常),2(删除)
+		contentCategory.setStatus(1);
+		tbContentCategoryMapper.insert(contentCategory);
+		
+		TbContentCategory parentNode = tbContentCategoryMapper.selectByPrimaryKey(parentId);
+		//如果当前节点的父节点添加之前是叶子节点,现在有了子节点，所以要改成父节点
+		if (!parentNode.getIsParent()){
+			parentNode.setIsParent(true);
+			tbContentCategoryMapper.updateByPrimaryKey(parentNode);
+		}
+		return TaotaoResult.ok(contentCategory);
 	}
 
 }
