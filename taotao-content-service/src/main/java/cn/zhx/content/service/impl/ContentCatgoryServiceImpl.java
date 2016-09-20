@@ -67,4 +67,26 @@ public class ContentCatgoryServiceImpl implements ContentCatgoryService{
 		return TaotaoResult.ok(contentCategory);
 	}
 
+	/* (non-Javadoc)修改结点类型
+	 * @see cn.zhx.service.ContentCatgoryService#update(long, java.lang.String)
+	 */
+	@Override
+	public TaotaoResult update(long id, String text) {
+		TbContentCategory category = tbContentCategoryMapper.selectByPrimaryKey(id);
+		category.setUpdated(new Date());
+		category.setName(text);
+		tbContentCategoryMapper.updateByPrimaryKey(category);
+		return TaotaoResult.ok();
+	}
+
+
+
+
+
+	@Override
+	public TaotaoResult del(long id) {
+		tbContentCategoryMapper.deleteByPrimaryKey(id);
+		return TaotaoResult.ok();
+	}
+
 }
