@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 
+import cn.zhx.common.utils.JsonUtils;
 import cn.zhx.mapper.TbContentMapper;
 import cn.zhx.pojo.Ad1Node;
 import cn.zhx.pojo.MybatiesPageHelperRusult;
@@ -18,11 +21,18 @@ import cn.zhx.pojo.TbContent;
 import cn.zhx.pojo.TbContentExample;
 import cn.zhx.pojo.TbContentExample.Criteria;
 import cn.zhx.service.ContentSerivce;
+import cn.zhx.service.JedisClient;
 @Service
 public class ContentServiceImpl implements ContentSerivce {
 	
 	@Autowired
 	private TbContentMapper contentMapper;
+	
+	@Autowired
+	private JedisClient jedisClient;
+	
+	@Value("${REDIS_CONTENT_HASH_KEY}")
+	private String contentKey;
 
 	@Override
 	public MybatiesPageHelperRusult getContentList(long categoryId, int page,
@@ -49,6 +59,16 @@ public class ContentServiceImpl implements ContentSerivce {
 
 	@Override
 	public List<Ad1Node> getContentListForPortal(long categoryId) {
+		try {
+			String result = jedisClient.hget(contentKey, categoryId+"");
+			if(StringUtils.isNotBlank(result)){
+				List<Ad1Node> jsonToList = JsonUtils.jsonToList(result, Ad1Node.class);
+				return jsonToList;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		TbContentExample example = new TbContentExample();
 		Criteria criteria = example.createCriteria();
 		criteria.andCategoryIdEqualTo(categoryId);
@@ -63,6 +83,13 @@ public class ContentServiceImpl implements ContentSerivce {
 			node.setSrcB(tbContent.getPic2());
 			node.setHref(tbContent.getUrl());
 			result.add(node);
+		}
+		
+		try {
+			String objectToJson = JsonUtils.objectToJson(result);
+			jedisClient.hset(contentKey, categoryId+"", objectToJson);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return result;
 	}
